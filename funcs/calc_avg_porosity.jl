@@ -42,8 +42,9 @@ end
 
 function calc_avg_porosity(pw::PorosityWindow, size::Int)
     rows, cols = window_ranges(pw, size)
-    bulk = rows * cols
-
     window = @view pw.cross[rows, cols]
-    return count(!, window) / length(window) * 100
+    bulk = length(window)
+    void = Int(count(!, window))
+    ϕ = void / bulk * 100
+    return ϕ
 end

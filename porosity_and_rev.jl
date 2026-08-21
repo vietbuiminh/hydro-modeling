@@ -129,7 +129,7 @@ lines!(
 )
 scatter!(ax_rev, widths, ϕ_bot_by_width, color = bot_color)
 rev_legend = axislegend(ax_rev, position = :cb)
-save("figures/berea_sandstone_rev.png", rev)
+save("figures/berea_sandstone_avg_phi.png", rev)
 display(rev) # view the plot
 
 #=
