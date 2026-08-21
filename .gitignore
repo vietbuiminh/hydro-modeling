@@ -33,3 +33,5 @@ env/
 
 # .JuliaFormatter.toml
 # .githooks
+
+# figures/*

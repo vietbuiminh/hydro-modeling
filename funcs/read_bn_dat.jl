@@ -1,8 +1,9 @@
+using DelimitedFiles
+
 function read_bn_dat(file_path::String; width = 400, height = 400, T = UInt8)
-    matrix = Matrix{T}(undef, width, height)
-    open(file_path, "r") do io
-        read!(io, matrix)
-    end
+    raw = readdlm(file_path)
+    @assert size(raw) == (height, width) "expected $(height)x$(width), got $(size(raw))"
+    matrix = T.(raw)
     void_space = findall(x -> x == false, matrix)
     solid_space = findall(x -> x == true, matrix)
     void_percentage = length(void_space) / (width * height) * 100
