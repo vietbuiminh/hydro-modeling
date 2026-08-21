@@ -1,0 +1,80 @@
+#!/bin/sh
+set -eu
+
+# Run Julia formatter before every commit.
+julia -e 'using Pkg; Pkg.add("JuliaFormatter")' >/dev/null 2>&1 || true
+julia -e 'using JuliaFormatter; format(".")'
+
+# Wrap long code/comment lines to a consistent width.
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+MAX = 88
+
+
+def wrap_line(line: str) -> str:
+    s = line.rstrip("\n")
+    if len(s) <= MAX:
+        return line
+
+    # Preserve leading indentation.
+    m = re.match(r"^(\s*)", s)
+    indent = m.group(1)
+    body = s[len(indent):]
+
+    # Keep comments intact.
+    if body.startswith("#"):
+        prefix = indent + "# "
+        rest = body[2:]
+        words = rest.split()
+        if not words:
+            return line
+        out = []
+        current = prefix
+        for w in words:
+            candidate = current + (" " if current != prefix else "") + w
+            if len(candidate) <= MAX:
+                current = candidate
+            else:
+                out.append(current.rstrip())
+                current = prefix + w
+        if current.strip():
+            out.append(current.rstrip())
+        return "\n".join(out) + "\n"
+
+    # Wrap ordinary code by splitting on operators/commas while preserving indentation.
+    chunks = re.split(r"(,\s*|\s+\|\s+|\s*\+\s*|\s*\*\s*|\s*\-\s*|\s*=\s*)", body)
+    buf = indent
+    out = []
+    for part in chunks:
+        if part == "":
+            continue
+        candidate = buf + part
+        if len(candidate) <= MAX:
+            buf = candidate
+        else:
+            out.append(buf.rstrip())
+            buf = indent + part.lstrip()
+    if buf.strip():
+        out.append(buf.rstrip())
+    if not out:
+        return line
+    return "\n".join(out) + "\n"
+
+
+for path in Path(".").rglob("*.jl"):
+    if path.is_dir():
+        continue
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    wrapped = []
+    for line in lines:
+        if len(line.rstrip("\n")) > MAX:
+            wrapped.append(wrap_line(line))
+        else:
+            wrapped.append(line)
+    path.write_text("".join(wrapped), encoding="utf-8")
+PY
+
+git add .

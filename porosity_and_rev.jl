@@ -23,9 +23,11 @@ of a micro-CT image of Berea sandstone. A value of 0 represents
 pore space (void), and a value of 1 represents solid rock.
 =#
 top_cross =
-    read_bn_dat("data/berea_xsection_top.dat", width = 400, height = 400, T = Bool) # read in top
+    read_bn_dat("data/berea_xsection_top.dat", width = 400, height = 400, T =
+    Bool) # read in top
 bot_cross =
-    read_bn_dat("data/berea_xsection_bot.dat", width = 400, height = 400, T = Bool) # read in bot
+    read_bn_dat("data/berea_xsection_bot.dat", width = 400, height = 400, T =
+    Bool) # read in bot
 #= expected out:
 ┌ Info: data/berea_xsection_top.dat:
 │   void = 95018
@@ -62,5 +64,6 @@ sandx # view the plot
 =#
 
 #=
-    c) For each cross section, calculate the average porosity within a square window centered on the image as a function of window size. Plot the results for both cross sections on the same graph.
+    c) For each cross section,
+    calculate the average porosity within a square window centered on the image as a function of window size. Plot the results for both cross sections on the same graph.
 =#
