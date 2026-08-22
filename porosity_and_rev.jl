@@ -118,6 +118,7 @@ ax_rev = Axis(
     xlabel = "Window size (pixels)",
     ylabel = "Average ϕ (%)",
 )
+# ylims!(ax_rev,0, 1)
 lines!(ax_rev, widths, ϕ_top_by_width, label = "Top", linewidth = 2, color = top_color)
 scatter!(ax_rev, widths, ϕ_top_by_width, color = top_color)
 lines!(
@@ -143,14 +144,18 @@ display(rev) # view the plot
     do this by scanning the part (c) curve from the largest to smallest 
     windows and take the first window size after the last tolerance violation.
 
-    The tolerance threshold (T) from Yang et al. 2026 suggests 10% of T is a 
+    The tolerance threshold (T) from Yang et al. 2026 suggests 10% is a 
     balance choice. The percentage was selected through sensitivity analysis 
     identified a tolerance threshold ranging between 5% and 15% of the bulk 
-    porosity.
+    porosity from tight sandstone pore structures. However, their works was 
+    estimated with 3D CT where voxel is the unit of volume, here we are using
+    square pixels as the unit of the area and with the justification from the 
+    observed curves, I reduced the recommended tolerance threshold to 5% for 
+    this 2D case.
 
-    After running, REV estimated for Top xcross is 384 px (ϕ ~= 10%) because it
+    After running, REV estimated for Top xcross is 326 px (ϕ ~= 21%) because it
     reached a stable flat line in the range of 344 to 400 px,
-    and for Bot xcross is 392 px (ϕ ~= 16%). However, the Bot curve suggest the 
+    and for Bot xcross is 356 px (ϕ ~= 16%). However, the Bot curve suggest the 
     REV could be improved by even a larger window size since the curve is still
     going down and have not yet reached a stable flat line. 
 
@@ -160,20 +165,19 @@ display(rev) # view the plot
         Microstructure via 3D CT Reconstruction. Water, 18(15), 1805. 
         https://doi.org/10.3390/w18151805
 =#
-function rev_length_scale(widths, ϕ_by_width, ϕ_bulk; tol = 1.0)
-    idx = findlast(i -> abs(ϕ_by_width[i] - ϕ_bulk) > tol, eachindex(widths))
+function rev_length_scale(widths, ϕ_by_width, ϕ_bulk; T = 0.1)
+    idx = findlast(i -> abs(ϕ_by_width[i] - ϕ_bulk) > T * ϕ_bulk, eachindex(widths))
     idx === nothing && return widths[1]
     return widths[min(idx + 1, length(widths))]
 end
 
-T = 0.1 # 10% tolerance percentage around the bulk ϕ suggested by Yang et al. 2026
-rev_top_px = rev_length_scale(widths, ϕ_top_by_width, ϕ_top; tol = T)
-rev_bot_px = rev_length_scale(widths, ϕ_bot_by_width, ϕ_bot; tol = T)
+T = 0.05 # 5% relative tolerance around the bulk ϕ suggested by Yang et al. 2026
+rev_top_px = rev_length_scale(widths, ϕ_top_by_width, ϕ_top; T = T)
+rev_bot_px = rev_length_scale(widths, ϕ_bot_by_width, ϕ_bot; T = T)
 
 @info(
-
-    "Estimated REV length scale (window size beyond which ϕ stays within tolerance $(rev_tol)pp of bulk ϕ):"
-    ,
+    "Estimated REV length scale (window size beyond which ϕ stays within $(T*
+    100)% relative tolerance of bulk ϕ):",
     REV_top_px = rev_top_px,
     REV_bot_px = rev_bot_px,
 )
