@@ -70,6 +70,7 @@ Legend(
 heatmap!(ax_top, top_cross .>= true, colormap = [light_buff, buff])
 heatmap!(ax_bot, bot_cross .>= true, colormap = [light_buff, buff])
 
+# see the output figure inside the `figures` folder, 
 save("figures/berea_sandstone_xsection.png", sandx)
 display(sandx) # view the plot
 
@@ -129,6 +130,7 @@ lines!(
 )
 scatter!(ax_rev, widths, ϕ_bot_by_width, color = bot_color)
 rev_legend = axislegend(ax_rev, position = :cb)
+# see the output figure inside the `figures` folder, 
 save("figures/berea_sandstone_avg_phi.png", rev)
 display(rev) # view the plot
 
@@ -141,11 +143,22 @@ display(rev) # view the plot
     do this by scanning the part (c) curve from the largest to smallest 
     windows and take the first window size after the last tolerance violation.
 
+    The tolerance threshold (T) from Yang et al. 2026 suggests 10% of T is a 
+    balance choice. The percentage was selected through sensitivity analysis 
+    identified a tolerance threshold ranging between 5% and 15% of the bulk 
+    porosity.
+
     After running, REV estimated for Top xcross is 344 px (ϕ ~= 20%) because it
     reached a stable flat line in the range of 344 to 400 px,
     and for Bot xcross is 300 px (ϕ ~= 16%). However, the Bot curve suggest the 
     REV could be improved by even a larger window size since the curve is still
     going down and have not yet reached a stable flat line. 
+
+    Reference:
+    - Yang, B., Dong, P., Liu, J., Peng, J., & Li, L. (2026). Evaluation of 
+        Representative Elementary Volumes for Characterizing Tight Sandstone 
+        Microstructure via 3D CT Reconstruction. Water, 18(15), 1805. 
+        https://doi.org/10.3390/w18151805
 =#
 function rev_length_scale(widths, ϕ_by_width, ϕ_bulk; tol = 1.0)
     idx = findlast(i -> abs(ϕ_by_width[i] - ϕ_bulk) > tol, eachindex(widths))
@@ -153,9 +166,9 @@ function rev_length_scale(widths, ϕ_by_width, ϕ_bulk; tol = 1.0)
     return widths[min(idx + 1, length(widths))]
 end
 
-rev_tol = 0.2 # tolerance percentage points around the bulk ϕ
-rev_top_px = rev_length_scale(widths, ϕ_top_by_width, ϕ_top; tol = rev_tol)
-rev_bot_px = rev_length_scale(widths, ϕ_bot_by_width, ϕ_bot; tol = rev_tol)
+T = 0.1 # 10% tolerance percentage around the bulk ϕ suggested by Yang et al. 2026
+rev_top_px = rev_length_scale(widths, ϕ_top_by_width, ϕ_top; tol = T)
+rev_bot_px = rev_length_scale(widths, ϕ_bot_by_width, ϕ_bot; tol = T)
 
 @info(
 
@@ -184,5 +197,7 @@ vlines!(
 
 delete!(rev_legend)
 axislegend(ax_rev, position = :cb)
+# see the output figure inside the `figures` folder, 
+# and the REV markers are shown on the plot.
 save("figures/berea_sandstone_rev.png", rev)
 display(rev) # view the plot with REV markers
