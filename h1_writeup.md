@@ -11,9 +11,8 @@ Code source: [gh:vietbuiminh/hydro-modeling/porosity_and_rev.jl](https://github.
 
 a) Plot the two micro-CT cross sections.
 
-![Berea XSection](figures/berea_sandstone_xsection.png)
+![Figure 1: Show the cross section from the binary files for Berea top cross section and bottom section. Light yellow is indicating the pore/void section while dark yellow is indicating the solid section](figures/berea_sandstone_xsection.png)
 
-> Figure 1: Show the cross section from the binary files for Berea top cross section and bottom section. Light yellow is indicating the pore/void section while dark yellow is indicating the solid section
 
 b) Estimate the porosity of the rock from each cross section. 
 
@@ -27,12 +26,11 @@ c) For each cross section,calculate the average porosity within a square window 
 
 I made into an Object/Module so it is easier to debug and reuse.
 
-![Average Porosity as a function of window size](figures/berea_sandstone_avg_phi.png)
-> Figure 2: Average Porosity (%) as the function of window size ranging from 2px to 400px of a square window edge. Solid blue line shows for the top cross section while solid yellow line indicates for bottom cross section of Berea sandstone. 
+![Figure 2: Average Porosity (%) as the function of window size ranging from 2px to 400px of a square window edge. Solid blue line shows for the top cross section while solid yellow line indicates for bottom cross section of Berea sandstone.](figures/berea_sandstone_avg_phi.png)
 
 d) Based on the results from part (c), estimate the characteristic length scale of the representative elementary volume (REV) in pixel units.
 
-![REV](figures/berea_sandstone_rev.png)
+![Figure 3: Showing the REV marking on the Average Porosity as the function of window size](figures/berea_sandstone_rev.png)
 
 Note: the REV is the large enough window size which the average $\phi$ properties become approx. stable. Also it is better to let the computer do this by scanning the part (c) curve from the largest to smallest windows and take the first window size after the last tolerance violation.
 
