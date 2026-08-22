@@ -148,9 +148,9 @@ display(rev) # view the plot
     identified a tolerance threshold ranging between 5% and 15% of the bulk 
     porosity.
 
-    After running, REV estimated for Top xcross is 344 px (ϕ ~= 20%) because it
+    After running, REV estimated for Top xcross is 384 px (ϕ ~= 10%) because it
     reached a stable flat line in the range of 344 to 400 px,
-    and for Bot xcross is 300 px (ϕ ~= 16%). However, the Bot curve suggest the 
+    and for Bot xcross is 392 px (ϕ ~= 16%). However, the Bot curve suggest the 
     REV could be improved by even a larger window size since the curve is still
     going down and have not yet reached a stable flat line. 
 
