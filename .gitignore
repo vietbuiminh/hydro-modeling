@@ -37,3 +37,6 @@ env/
 # figures/*
 
 *.docx
+
+lectures
+hw
