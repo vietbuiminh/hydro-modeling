@@ -19,30 +19,46 @@ Given:
 **1** The hydraulic conductivity
 
 $$
-K = \frac{\rho g k}{\mu} \\
-= \frac{1000 \cdot 9.81 \cdot 1.0\cdot 10^{-12}}{1.0 \cdot 10^{-3}} \\
+K = \frac{\rho g k}{\mu}
+$$
+$$
+= \frac{1000 \cdot 9.81 \cdot 1.0\cdot 10^{-12}}{1.0 \cdot 10^{-3}}
+$$
+$$
 = 9.81 \cdot 10^{-6} \ m/s
 $$
 
 Starting from the steady-state governing equation (1-D, homogenous)
 
 $$
-\nabla \cdot (-K\nabla h) = 0, \\
-
-\frac{d}{dx}\left(-K\frac{dh}{dx}\right) = 0 \\
-
-\implies -K\frac{dh}{dx} = C_1 \\
+\nabla \cdot (-K\nabla h) = 0,
+$$
+$$
+\frac{d}{dx}\left(-K\frac{dh}{dx}\right) = 0
+$$
+$$
+\implies -K\frac{dh}{dx} = C_1
+$$
+$$
 \implies -Kh(x) = C_1 x+ C_2
 $$
 
 *Boundary Conditions:*
 
-- Left boundary: $u_{|x=0} = u_{in} = -K\frac{dh}{dx} = C_1 \\ \therefore C_1 = u_{in}$
+- Left boundary: $u_{|x=0} = u_{in} = -K\frac{dh}{dx} = C_1$ $\therefore C_1 = u_{in}$
 
 
-- Right boundary: $h_{|x=1m} = 1m \\ -K \cdot 1m = u_{in} \cdot 1m + C_2 \\ \therefore C_2 = -K - u_{in}$
+- Right boundary: 
 
-$\implies -Kh = u_{in}x - K - u_{in} = u_{in}(x-1)-K \\ \implies h(x) = - \frac{u_{in}}{K}(x-1) + 1$
+$h_{|x=1m} = 1m$ 
+
+$-K \cdot 1m = u_{in} \cdot 1m + C_2$ 
+
+$\therefore C_2 = -K - u_{in}$
+
+$\implies -Kh = u_{in}x - K - u_{in} = u_{in}(x-1)-K$ 
+
+$\implies h(x) = - \frac{u_{in}}{K}(x-1) + 1$
 
 
 
