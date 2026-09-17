@@ -1,0 +1,79 @@
+using LinearAlgebra
+using Plots
+
+# physical properties
+ρ = 1000 # water density [g/cm^3]
+μ = 1.0e-3 # dynamic viscosity [Pa s]
+g = 9.81 # gravitational acceleration [m/s^2]
+k = 1e-10 # instrinsic permeability [m^2]
+
+# model domain
+Lx = 100 # domain length in x direction [m]
+Ly = 50 # domain length in y direction [m]
+
+nx = 100 # number of cells in x direction
+ny = 50 # number of cells in y direction
+nc = nx * ny # total number of cells
+
+dx = Lx / nx
+dy = Ly / ny
+
+# boundary conditions
+u_in = 0.1 / 100 / 60 # left boundary flux [m/s] = 0.1 cm/min [Neumann type]
+hR = 9 # right boundary head [m] [Dirichlet type]
+
+# transmissibility matrix
+# in class the code contain an input file for Kmat, but here we just use a constant
+# value for Kmat
+Kmat = ρ*g*k/μ .* ones(ny, nx) # m/s <--- this is K * matrix
+
+# TODO: read in Kmat from a file, and then calculate the harmonic mean in x and y
+# directions
+
+K_har_x = (1 ./ Kmat[:, 1:(nx - 1)] .+ 1 ./ Kmat[:, 2:nx]) .^ -
+1 # harmonic mean in x direction
+K_har_y = (1 ./ Kmat[1:(ny - 1), :] .+ 1 ./ Kmat[2:ny, :]) .^ -
+1 # harmonic mean in y direction
+
+TLmat = fill(NaN, ny, nx)
+TLmat[:, 1] .= 0.0 # left boundary: no transmissibility
+TLmat[:, 2:nx] .= (2/dx*dy) .* K_har_x # transmissibility in x direction
+
+TRmat = fill(NaN, ny, nx)
+TRmat[:, nx] .= (2/dx*dy) .* Kmat[:, nx]
+TRmat[:, 1:(nx - 1)] .= (2/dx*dy) .* K_har_x # transmissibility in x direction
+
+TUmat = fill(NaN, ny, nx)
+TUmat[1, :] .= 0.0 # top boundary: no transmissibility
+TUmat[2:ny, :] .= (2/dx*dy) .* K_har_y # transmissibility in y direction
+
+TDmat = fill(NaN, ny, nx)
+TDmat[ny, :] .= 0.0 # bottom boundary: no transmissibility
+TDmat[1:(ny - 1), :] .= (2/dx*dy) .* K_har_y # transmissibility in y direction
+
+TL = reshape(TLmat, nx*ny)
+TR = reshape(TRmat, nx*ny)
+TU = reshape(TUmat, nx*ny)
+TD = reshape(TDmat, nx*ny)
+
+TC = TL .+ TR .+ TU .+ TD # transmissibility matrix diagonal
+
+Tmat =
+    diagm(0 => TC) +
+    diagm(-1 => -TU[2:nc]) +
+    diagm(1 => -TD[1:(nc - 1)]) +
+    diagm(-ny => -TL[(ny + 1):nc]) +
+    diagm(ny => -TR[1:(nc - ny)]) # m/s
+
+# RHS vector b
+bmat = zeros(ny, nx)
+bmat[:, 1] .= u_in .* dy # left boundary: specified flux (Neumann)
+bmat[:, nx] .= TRmat[:, nx] .* hR # right boundary: specified head (Dirichlet)
+
+b = reshape(bmat, nc) # RHS vector
+
+# hydraulic head vector h
+h = Tmat \ b # solve for hydraulic head
+
+hmat = reshape(h, ny, nx) # reshape h vector to matrix form
+heatmap(hmat, xlabel = "x cell", ylabel = "y cell", title = "Hydraulic head")
