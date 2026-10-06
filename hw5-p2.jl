@@ -34,8 +34,8 @@ c_in(t) = t < 10 * day ? 1.0 : 0.0 # inject c = 1 for the first 10 days
 kmat = readdlm("data/permeability_field.csv", ',', Float64) # [m^2]
 μ_log10k = -10 # given mean of log10(k)
 σ_log10k = 1 # given standard deviation of log10(k)
-Y = (log10.(kmat) .- μ_log10k) ./ σ_log10k # standardized field,
-same pattern for every σ
+# standardized field, same pattern for every σ
+Y = (log10.(kmat) .- μ_log10k) ./ σ_log10k
 
 σ_ls = [0.1, 0.5, 1, 2] # heterogeneity levels
 log10k(σ) = μ_log10k .+ σ .* Y
@@ -62,8 +62,8 @@ runs = map(σ_ls) do σ
     flow = solve_flow(Kmat, dx, dy, hL, hR)
     res = solve_transport(flow, dx, dy, ϕ, D_diff, α, c_in, tdays .* day)
 
-    cbar = [vec(sum(Cmat, dims = 1)) .* dy ./ Ly for Cmat in res.Cmat_ls] # transverse-
-    averaged concentration c̄(x,t) = (1/Ly) ∫ c dy
+    # transverse-averaged concentration c̄(x,t) = (1/Ly) ∫ c dy
+    cbar = [vec(sum(Cmat, dims = 1)) .* dy ./ Ly for Cmat in res.Cmat_ls]
     ux_mean = sum(flow.UL[:, 1]) * dy / Ly # mean Darcy velocity from the inflow [m/s]
     mass = [ϕ * sum(Cmat) * dx * dy for Cmat in res.Cmat_ls]
     mass_in = ux_mean * Ly * 10 * day # advective inflow over 10 days
