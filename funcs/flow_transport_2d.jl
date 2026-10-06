@@ -73,7 +73,7 @@ function solve_flow(Kmat, dx, dy, hL, hR)
     return (; hmat, UL, UR, UU, UD)
 end
 
-# Explicit (forward Euler) advection-dispersion with 1st-order upwinding.
+# advection-dispersion with 1st-order upwinding (Euler)
 # tsave: the times [s] at which to store the concentration field; the time
 # step is shortened so the simulation lands exactly on each of them.
 function solve_transport(flow, dx, dy, ϕ, D_diff, α, c_in, tsave)
@@ -94,7 +94,7 @@ function solve_transport(flow, dx, dy, ϕ, D_diff, α, c_in, tsave)
     DU = [zeros(1, nx); Dy_har] # top: no flux
     DD = [Dy_har; zeros(1, nx)] # bottom: no flux
 
-    # dt is fixed because the velocity field is steady
+    # determine dt
     dt_adv = 0.1 * min(dx, dy) / maximum(V_mag)
     dt_disp = 0.1 / (maximum(Dmat) * (1 / dx^2 + 1 / dy^2))
     dt_max = min(dt_adv, dt_disp)

@@ -41,7 +41,7 @@ res = solve_transport(flow, dx, dy, ϕ, D_diff, α, c_in, tdays .* day)
 X = range(dx / 2, step = dx, length = nx) # cell-center coordinates [m]
 Ycoord = range(dy / 2, step = dy, length = ny)
 
-# transverse-averaged concentration c̄(x,t) = (1/Ly) ∫ c dy
+# transverse-averaged concentration
 cbar = [vec(sum(Cmat, dims = 1)) .* dy ./ Ly for Cmat in res.Cmat_ls]
 
 ## expected mean pore velocity from the total inflow at the left boundary
@@ -49,59 +49,43 @@ ux_mean = sum(flow.UL[:, 1]) * dy / Ly # [m/s]
 vx_mean = ux_mean / ϕ # [m/s]
 vx_day = vx_mean * day # [m/day]
 
-# plume centroid and position of the c̄ = 0.5 leading front
-centroid(c) = sum(X .* c) / sum(c)
+# position of the peak of c_bar and of the c_bar = 0.5 leading front
+function peak(c)
+    i = argmax(c)
+    (i == 1 || i == nx) && return X[i]
+    a, b, d = c[i - 1], c[i], c[i + 1]
+    return X[i] + 0.5 * (a - d) / (a - 2b + d) *
+    dx # vertex of a parabola through the 3 cells
+end
 function front(c, level = 0.5)
     i = findlast(>=(level), c)
     (i === nothing || i == nx) && return NaN
     return X[i] + (c[i] - level) / (c[i] - c[i + 1]) * dx # linear interpolation
 end
-xbar = centroid.(cbar)
+xpeak = peak.(cbar)
 xfront = front.(cbar)
 
-# expected positions for a 10-day slug moving at vx: front at vx*t, centroid at
-# the middle of the injected slug
+# expected positions for a 10-day slug moving at vx: front at vx*t, peak at the
+# middle of the slug once injection stops (during injection the peak sits at the inlet)
 xfront_exp = vx_day .* tdays
-xbar_exp = [t <= 10 ? vx_day * t / 2 : vx_day * (t - 5) for t in tdays]
+xpeak_exp = [t <= 10 ? NaN : vx_day * (t - 10) for t in tdays]
 
-# plume speeds: front during days 5-20, centroid once injection has stopped
-# and before the plume reaches the outlet (days 12-22)
-v_front = (xfront[20] - xfront[5]) / (20 - 5) # [m/day]
-v_centroid = (xbar[22] - xbar[12]) / (22 - 12) # [m/day]
+# plume speeds: front during days 10-20; peak over days 20-30, after dispersion
+# has worn down the c = 1 plateau left behind by the injection
+v_front = (xfront[20] - xfront[10]) / (20 - 10) # [m/day]
+v_peak = (xpeak[30] - xpeak[20]) / (30 - 20) # [m/day]
 
 # solute mass in the domain vs. mass that entered by advection
 mass = [ϕ * sum(Cmat) * dx * dy for Cmat in res.Cmat_ls] # [kg/m per unit c]
 mass_in = ux_mean * Ly * 10 * day # advective inflow over 10 days
 
-## report
-Cmin = minimum(minimum.(res.Cmat_ls))
-Cmax = maximum(maximum.(res.Cmat_ls))
-transverse_dev =
-    maximum(maximum(abs.(Cmat .- mean(Cmat, dims = 1))) for Cmat in res.Cmat_ls)
-
-@printf("K = %.3e m/s\n", Kmat[1])
-@printf("head: %.4f to %.4f m\n", extrema(flow.hmat)...)
-@printf("mean Darcy velocity ux = %.4e m/s\n", ux_mean)
-@printf("mean pore velocity vx = %.4e m/s = %.4f m/day\n", vx_mean, vx_day)
-@printf("max |Uy| = %.3e m/s\n", maximum(abs.(0.5 .* (flow.UU .+ flow.UD))))
-@printf("D_h = %.4e m^2/s\n", maximum(res.Dmat))
-@printf("dt_adv = %.1f s, dt_disp = %.1f s\n", res.dt_adv, res.dt_disp)
-@printf("c range over all saved times: [%.3e, %.6f]\n", Cmin, Cmax)
-@printf("max transverse deviation |c - c̄|: %.3e\n", transverse_dev)
-@printf("front speed (day 5-20) = %.4f m/day\n", v_front)
-@printf("centroid speed (day 12-22) = %.4f m/day\n", v_centroid)
-println("\n t[d]  x_front  vx*t   x̄      x̄_exp   max c̄   mass/mass_in")
-for i in tdays
-    @printf("%4d  %6.2f  %6.2f  %6.2f  %6.2f  %.3f  %.3f\n", i, xfront[i],
-        xfront_exp[i], xbar[i], xbar_exp[i], maximum(cbar[i]), mass[i] / mass_in)
-end
-
 ## plots
 set_theme!(theme_latexfonts())
 update_theme!(fontsize = 18)
+
 tplot = 5:5:30
 
-# 2-D concentration fields
+# 2D concentration fields
 fig = Figure(size = (1080, 600))
 for (n, td) in enumerate(tplot)
     r, col = fldmod1(n, 3)
@@ -147,11 +131,11 @@ scatter!(ax3, tdays, xfront, label = L"front, $\bar{c} = 0.5$")
 lines!(
     ax3,
     tdays,
-    xbar_exp,
+    xpeak_exp,
     color = :black,
     linestyle = :dot,
-    label = "expected centroid",
+    label = L"slug center, $\bar{v}_x(t - 10\ d)$",
 )
-scatter!(ax3, tdays, xbar, marker = :diamond, label = L"centroid $\bar{x}$")
+scatter!(ax3, tdays, xpeak, marker = :diamond, label = L"peak of $\bar{c}$")
 axislegend(ax3, position = :lt)
 save("figures/hw5-p1-plume-position.png", fig3)
