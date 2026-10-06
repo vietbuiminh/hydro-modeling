@@ -114,8 +114,7 @@ update_theme!(
     Axis = (yreversed = true, aspect = DataAspect()), # yreversed mimics imagesc
 )
 X = range(dx / 2, step = dx, length = nx) # cell-center coordinates
-Ycoord = range(dy / 2, step = dy, length = ny) # `Y` is the standardized field,
-don't overwrite it
+Ycoord = range(dy / 2, step = dy, length = ny)
 skip = 5
 
 # Darcy velocities are tiny relative to the domain, so the raw vectors are

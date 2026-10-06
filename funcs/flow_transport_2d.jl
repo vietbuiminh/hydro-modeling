@@ -15,13 +15,13 @@ function solve_flow(Kmat, dx, dy, hL, hR)
     1 # harmonic mean in y direction
 
     TLmat = fill(NaN, ny, nx)
-    TLmat[:, 1] .= (2*dy/dx) .* Kmat[:, 1] # left boundary (Dirichlet), half-
-    cell distance
+    # left boundary (Dirichlet)
+    TLmat[:, 1] .= (2*dy/dx) .* Kmat[:, 1]
     TLmat[:, 2:nx] .= (2*dy/dx) .* K_har_x
 
     TRmat = fill(NaN, ny, nx)
-    TRmat[:, nx] .= (2*dy/dx) .* Kmat[:, nx] # right boundary (Dirichlet), half-
-    cell distance
+    # right boundary (Dirichlet)
+    TRmat[:, nx] .= (2*dy/dx) .* Kmat[:, nx]
     TRmat[:, 1:(nx - 1)] .= (2*dy/dx) .* K_har_x
 
     TUmat = fill(NaN, ny, nx)

@@ -110,8 +110,7 @@ update_theme!(
     Axis = (yreversed = true, aspect = DataAspect()), # yreversed mimics imagesc
 )
 X = range(dx / 2, step = dx, length = nx) # cell-center coordinates
-Ycoord = range(dy / 2, step = dy, length = ny) # `Y` is the standardized field,
-don't overwrite it
+Ycoord = range(dy / 2, step = dy, length = ny)
 skip = 5
 
 # Darcy velocities are tiny relative to the domain, so the raw vectors are
@@ -147,8 +146,8 @@ dt_max = 0.1 * min(dx, dy) / maximum(sqrt.(Ux .^ 2 .+
 # one explicit upwind step; returns the new concentration field
 function advect(CC, C_in, dt)
     CL = [fill(C_in, ny, 1) CC[:, 1:(nx - 1)]] # left boundary condition of C_in
-    CR = [CC[:, 2:nx] CC[:, nx]] # zero-
-    gradient concentration condition on outflow boundary
+    # zero-gradient concentration condition on outflow boundary
+    CR = [CC[:, 2:nx] CC[:, nx]]
     CU = [CC[1:1, :]; CC[1:(ny - 1), :]]
     CD = [CC[2:ny, :]; CC[ny:ny, :]]
 
