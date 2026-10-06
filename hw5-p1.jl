@@ -55,7 +55,7 @@ function peak(c)
     (i == 1 || i == nx) && return X[i]
     a, b, d = c[i - 1], c[i], c[i + 1]
     return X[i] + 0.5 * (a - d) / (a - 2b + d) *
-    dx # vertex of a parabola through the 3 cells
+                  dx # vertex of a parabola through the 3 cells
 end
 function front(c, level = 0.5)
     i = findlast(>=(level), c)
