@@ -177,8 +177,8 @@ Cmat = let
 
         ## neighboring cell centers' concentration
         CL = [fill(C_in, ny, 1) Cmat[:, 1:(nx - 1)]]
-        CR = [Cmat[:, 2:nx] Cmat[:, nx]] # zero-
-        gradient concentration condition [Neumann]
+        # zero-gradient concentration condition [Neumann]
+        CR = [Cmat[:, 2:nx] Cmat[:, nx]]
         CU = [zeros(1, nx); Cmat[1:(ny - 1), :]]
         CD = [Cmat[2:ny, :]; zeros(1, nx)]
 

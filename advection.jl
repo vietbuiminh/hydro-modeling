@@ -142,7 +142,7 @@ display(fig)
 ϕ = 0.3 # porosity
 day = 24 * 60 * 60 # [s]
 dt_max = 0.1 * min(dx, dy) / maximum(sqrt.(Ux .^ 2 .+
-Uy .^ 2) ./ ϕ) # CFL on pore velocity
+                                           Uy .^ 2) ./ ϕ) # CFL on pore velocity
 
 # one explicit upwind step; returns the new concentration field
 function advect(CC, C_in, dt)
