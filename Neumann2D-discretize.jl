@@ -106,8 +106,7 @@ for σ in σ_ls
     UL[:, 2:nx] .= TLmat[:, 2:nx] .* dh_x ./ dx # Darcy velocity in x direction
 
     UR = fill(NaN, ny, nx)
-    UR[:, nx] .= TRmat[:, nx] .* dh_x[:, nx -
-    1] ./ dx # right boundary (Dirichlet): nearest interior gradient
+    UR[:, nx] .= TRmat[:, nx] .* dh_x[:, nx - 1] ./ dx # right boundary (Dirichlet): nearest interior gradient
     UR[:, 1:(nx - 1)] .= TRmat[:, 1:(nx - 1)] .*
                          dh_x ./ dx # Darcy velocity in x direction
 

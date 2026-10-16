@@ -38,10 +38,8 @@ Y = (log10.(kmat) .- kmean) ./ kstd # standardized spatial field
 log10k = kmean .+ σ .* Y # rescaled log10(k) field
 Kmat = ρ*g/μ .* 10 .^ log10k # hydraulic conductivity [m/s]
 
-K_har_x = (1 ./ Kmat[:, 1:(nx - 1)] .+ 1 ./ Kmat[:, 2:nx]) .^ -
-1 # harmonic mean in x direction
-K_har_y = (1 ./ Kmat[1:(ny - 1), :] .+ 1 ./ Kmat[2:ny, :]) .^ -
-1 # harmonic mean in y direction
+K_har_x = (1 ./ Kmat[:, 1:(nx - 1)] .+ 1 ./ Kmat[:, 2:nx]) .^ -1 # harmonic mean in x direction
+K_har_y = (1 ./ Kmat[1:(ny - 1), :] .+ 1 ./ Kmat[2:ny, :]) .^ -1 # harmonic mean in y direction
 
 # TPFA
 TLmat = fill(NaN, ny, nx)

@@ -9,10 +9,9 @@ function solve_flow(Kmat, dx, dy, hL, hR)
     ny, nx = size(Kmat)
     nc = nx * ny
 
-    K_har_x = (1 ./ Kmat[:, 1:(nx - 1)] .+ 1 ./ Kmat[:, 2:nx]) .^ -
-    1 # harmonic mean in x direction
-    K_har_y = (1 ./ Kmat[1:(ny - 1), :] .+ 1 ./ Kmat[2:ny, :]) .^ -
-    1 # harmonic mean in y direction
+    # harmonic means in x and y directions
+    K_har_x = 1 ./ (1 ./ Kmat[:, 1:(nx - 1)] .+ 1 ./ Kmat[:, 2:nx])
+    K_har_y = 1 ./ (1 ./ Kmat[1:(ny - 1), :] .+ 1 ./ Kmat[2:ny, :])
 
     TLmat = fill(NaN, ny, nx)
     # left boundary (Dirichlet)
@@ -136,4 +135,134 @@ function solve_transport(flow, dx, dy, ϕ, D_diff, α, c_in, tsave)
         push!(Cmat_ls, copy(Cmat))
     end
     return (; Cmat_ls, V_mag, Dmat, dt_adv, dt_disp)
+end
+
+### ONLY advection, 1st-order upwind, FE
+# C0: initial concentration field; c_in: inflow concentration on the left boundary.
+# tedges: times [s] at which the run is split into bins; the outlet mass leaving
+#   this is for the suggestion from P4-3 to use the same-time bin when comparing.
+#   During each bin is accumulated so the BTC can be binned like a histogram.
+# tsnap: the subset of tedges at which to store the concentration field.
+function solve_advection(flow, dx, dy, ϕ, C0, c_in, tedges, tsnap)
+    (; UL, UR, UU, UD) = flow
+    ny, nx = size(UL)
+
+    Ux = 0.5 .* (UL .+ UR)
+    Uy = 0.5 .* (UU .+ UD)
+    V_mag = sqrt.(Ux .^ 2 .+ Uy .^ 2) ./ ϕ
+    dt_max = 0.1 * min(dx, dy) / maximum(V_mag)
+
+    Cmat = copy(C0)
+    Cnew = similar(Cmat)
+    t = 0.0
+    Cmat_ls = Matrix{Float64}[]
+    Mout = zeros(length(tedges) - 1) # mass leaving the outlet in each bin
+    for (n, ts) in enumerate(tedges)
+        while t < ts
+            dt = min(dt_max, ts - t)
+            for j in 1:nx, i in 1:ny
+                c = Cmat[i, j]
+                # neighbours: c_in at the inlet, zero gradient at the outlet
+                cL = j == 1 ? c_in : Cmat[i, j - 1]
+                cR = j == nx ? c : Cmat[i, j + 1]
+                cU = i == 1 ? 0.0 : Cmat[i - 1, j]
+                cD = i == ny ? 0.0 : Cmat[i + 1, j]
+
+                # upwind advective fluxes (positive = +x or +y)
+                FL = UL[i, j] * (UL[i, j] >= 0 ? cL : c)
+                FR = UR[i, j] * (UR[i, j] >= 0 ? c : cR)
+                FU = UU[i, j] * (UU[i, j] >= 0 ? cU : c)
+                FD = UD[i, j] * (UD[i, j] >= 0 ? c : cD)
+
+                netF = -FL * dy - FU * dx + FD * dx + FR * dy
+                Cnew[i, j] = c - dt / (ϕ * dx * dy) * netF
+
+                # solute mass through the outlet face during this step
+                j == nx && (Mout[n - 1] += FR * dy * dt)
+            end
+            Cmat, Cnew = Cnew, Cmat
+            t += dt
+        end
+        any(s -> isapprox(s, ts), tsnap) && push!(Cmat_ls, copy(Cmat))
+    end
+    return (; Cmat_ls, Mout, V_mag, dt_max)
+end
+
+# Pollock method:
+# v varies linearly in each direction: v = v0 + A (x - x0),
+# => x(s) - x0 = v0 (exp(A s) - 1) / A 
+# => time = log(v_exit / v0) / A
+# xp0, yp0: start positions [m] (y = 0 on the top boundary)
+# tsnap: [s] at which positions are recorded (NaN once a particle left).
+# Returns the snapshots and each particle outlet arrival time
+function track_particles(flow, dx, dy, ϕ, xp0, yp0, tsnap)
+    (; UL, UR, UU, UD) = flow
+    ny, nx = size(UL)
+    np = length(xp0)
+
+    xsnap = fill(NaN, np, length(tsnap))
+    ysnap = fill(NaN, np, length(tsnap))
+    tarrive = fill(Inf, np)
+
+    # displacement after time s, starting with velocity v and gradient A
+    move(v, A, s) = abs(A * s) < 1e-12 ? v * s : v * expm1(A * s) / A
+
+    # time to reach the downstream face at signed distance d
+    function exit_time(v, A, d)
+        v == 0 && return Inf
+        r = A * d / v
+        r <= -1 && return Inf # velocity changes sign before the face
+        return abs(r) < 1e-12 ? d / v : log1p(r) / A
+    end
+
+    for p in 1:np
+        x, y, t = xp0[p], yp0[p], 0.0
+        ix = clamp(floor(Int, x / dx) + 1, 1, nx)
+        iy = clamp(floor(Int, y / dy) + 1, 1, ny)
+        k = 1 # next snapshot
+        while true
+            xL = (ix - 1) * dx
+            yU = (iy - 1) * dy
+            vL, vR = UL[iy, ix] / ϕ, UR[iy, ix] / ϕ
+            vU, vD = UU[iy, ix] / ϕ, UD[iy, ix] / ϕ
+
+            Ax = (vR - vL) / dx
+            Ay = (vD - vU) / dy
+            vx = vL + Ax * (x - xL)
+            vy = vU + Ay * (y - yU)
+
+            # time to exit the cell through the left or right face
+            τx = exit_time(vx, Ax, vx > 0 ? xL + dx - x : xL - x)
+            τy = exit_time(vy, Ay, vy > 0 ? yU + dy - y : yU - y)
+            τ = min(τx, τy)
+
+            # record snapshot positions passed during this cell visit
+            while k <= length(tsnap) && tsnap[k] <= t + τ
+                s = tsnap[k] - t
+                xsnap[p, k] = x + move(vx, Ax, s)
+                ysnap[p, k] = y + move(vy, Ay, s)
+                k += 1
+            end
+            isinf(τ) && break # stagnant: never reaches a face
+
+            # move to the exit face and step into the neighbouring cell
+            if τx <= τy
+                x = vx > 0 ? xL + dx : xL
+                y = clamp(y + move(vy, Ay, τ), yU, yU + dy)
+                ix += vx > 0 ? 1 : -1
+            else
+                y = vy > 0 ? yU + dy : yU
+                x = clamp(x + move(vx, Ax, τ), xL, xL + dx)
+                iy += vy > 0 ? 1 : -1
+            end
+            t += τ
+
+            if ix > nx # left through the outlet
+                tarrive[p] = t
+                break
+            end
+            (ix < 1 || iy < 1 || iy > ny) && break # cannot happen with these BCs
+        end
+    end
+    return (; xsnap, ysnap, tarrive)
 end

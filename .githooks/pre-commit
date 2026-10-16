@@ -5,12 +5,14 @@ set -eu
 julia -e 'using Pkg; Pkg.add("JuliaFormatter")' >/dev/null 2>&1 || true
 julia -e 'using JuliaFormatter; format(".")'
 
-# Wrap long code/comment lines to a consistent width.
+# Wrap long comment lines to a consistent width. Code lines are left to
+# JuliaFormatter: splitting them at operators can change how Julia parses them
+# (e.g. `x .^ -1` became `x .^ -` + `1`, which broke solve_flow).
 python3 - <<'PY'
 from pathlib import Path
 import re
 
-MAX = 88
+MAX = 120
 
 
 def wrap_line(line: str) -> str:
@@ -23,43 +25,26 @@ def wrap_line(line: str) -> str:
     indent = m.group(1)
     body = s[len(indent):]
 
-    # Keep comments intact.
-    if body.startswith("#"):
-        prefix = indent + "# "
-        rest = body[2:]
-        words = rest.split()
-        if not words:
-            return line
-        out = []
-        current = prefix
-        for w in words:
-            candidate = current + (" " if current != prefix else "") + w
-            if len(candidate) <= MAX:
-                current = candidate
-            else:
-                out.append(current.rstrip())
-                current = prefix + w
-        if current.strip():
-            out.append(current.rstrip())
-        return "\n".join(out) + "\n"
-
-    # Wrap ordinary code by splitting on operators/commas while preserving indentation.
-    chunks = re.split(r"(,\s*|\s+\|\s+|\s*\+\s*|\s*\*\s*|\s*\-\s*|\s*=\s*)", body)
-    buf = indent
-    out = []
-    for part in chunks:
-        if part == "":
-            continue
-        candidate = buf + part
-        if len(candidate) <= MAX:
-            buf = candidate
-        else:
-            out.append(buf.rstrip())
-            buf = indent + part.lstrip()
-    if buf.strip():
-        out.append(buf.rstrip())
-    if not out:
+    # Only comments are wrapped; code lines are returned unchanged.
+    if not body.startswith("#"):
         return line
+
+    prefix = indent + "# "
+    rest = body[2:]
+    words = rest.split()
+    if not words:
+        return line
+    out = []
+    current = prefix
+    for w in words:
+        candidate = current + (" " if current != prefix else "") + w
+        if len(candidate) <= MAX:
+            current = candidate
+        else:
+            out.append(current.rstrip())
+            current = prefix + w
+    if current.strip():
+        out.append(current.rstrip())
     return "\n".join(out) + "\n"
 
 
