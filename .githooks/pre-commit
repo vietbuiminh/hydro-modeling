@@ -1,16 +1,22 @@
 #!/bin/sh
 set -eu
 
-# Run Julia formatter before every commit.
+# Only touch the .jl files staged for this commit (added, copied or modified),
+# so unrelated changes and untracked files are never pulled into the commit.
+files=$(git diff --cached --name-only --diff-filter=ACM -- '*.jl')
+[ -z "$files" ] && exit 0
+
+# Run Julia formatter on the staged files.
 julia -e 'using Pkg; Pkg.add("JuliaFormatter")' >/dev/null 2>&1 || true
-julia -e 'using JuliaFormatter; format(".")'
+julia -e 'using JuliaFormatter; format(ARGS)' $files
 
 # Wrap long comment lines to a consistent width. Code lines are left to
 # JuliaFormatter: splitting them at operators can change how Julia parses them
 # (e.g. `x .^ -1` became `x .^ -` + `1`, which broke solve_flow).
-python3 - <<'PY'
+python3 - $files <<'PY'
 from pathlib import Path
 import re
+import sys
 
 MAX = 120
 
@@ -48,9 +54,7 @@ def wrap_line(line: str) -> str:
     return "\n".join(out) + "\n"
 
 
-for path in Path(".").rglob("*.jl"):
-    if path.is_dir():
-        continue
+for path in map(Path, sys.argv[1:]):
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines(keepends=True)
     wrapped = []
@@ -62,4 +66,5 @@ for path in Path(".").rglob("*.jl"):
     path.write_text("".join(wrapped), encoding="utf-8")
 PY
 
-git add .
+# Re-stage only the files that were already staged, now formatted.
+git add -- $files
