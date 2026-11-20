@@ -6,6 +6,12 @@ set -eu
 files=$(git diff --cached --name-only --diff-filter=ACM -- '*.jl')
 [ -z "$files" ] && exit 0
 
+# Split $files on newlines only (no globbing), so names with spaces like
+# "hw5-p1 copy.jl" stay whole when passed to julia, python3 and git add.
+IFS='
+'
+set -f
+
 # Run Julia formatter on the staged files.
 julia -e 'using Pkg; Pkg.add("JuliaFormatter")' >/dev/null 2>&1 || true
 julia -e 'using JuliaFormatter; format(ARGS)' $files

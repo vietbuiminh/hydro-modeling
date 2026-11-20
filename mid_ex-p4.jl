@@ -56,7 +56,7 @@ tplot = 5:5:30 # snapshot times [days]
 
 # BTC time bins: 1 day wide for both methods. The run length grows with σ
 # because low-k zones hold solute for a long time. For σ = 2 the particle
-# arrivals reach ~3e7 days, far beyond what an explicit FVM can reach
+# arrivals reach 3e7 days, far beyond what an explicit FVM can reach
 # (dt ~ 2e-3 day), so that run is stopped at 20,000 days (~55 yr).
 dtbin = 1 # [days]
 tend = Dict(0.1 => 60, 0.5 => 250, 1 => 5000, 2 => 20000) # [days]
@@ -97,16 +97,16 @@ runs = map(σ_ls) do σ
 end
 
 ## report
-for r in runs
-    @printf("\nσ_log10k = %.1f (run to %d days)\n", r.σ, tend[r.σ])
-    @printf("  max pore velocity = %.3f m/day, dt = %.4f day\n",
-        maximum(r.fvm.V_mag) * day, r.fvm.dt_max / day)
-    @printf("  FVM mass exited: %.4f, particles exited: %.4f\n",
-        r.mass_out, r.ptcl_out)
-    @printf("  mean arrival time (within run): FVM %.2f d, particles %.2f d\n",
-        r.tmean_fvm, r.tmean_ptcl)
-    @printf("  last particle arrival: %.3e days\n", r.tmax_ptcl)
-end
+# for r in runs
+#     @printf("\nσ_log10k = %.1f (run to %d days)\n", r.σ, tend[r.σ])
+#     @printf("  max pore velocity = %.3f m/day, dt = %.4f day\n",
+#         maximum(r.fvm.V_mag) * day, r.fvm.dt_max / day)
+#     @printf("  FVM mass exited: %.4f, particles exited: %.4f\n",
+#         r.mass_out, r.ptcl_out)
+#     @printf("  mean arrival time (within run): FVM %.2f d, particles %.2f d\n",
+#         r.tmean_fvm, r.tmean_ptcl)
+#     @printf("  last particle arrival: %.3e days\n", r.tmax_ptcl)
+# end
 
 ## plots
 set_theme!(theme_latexfonts())
